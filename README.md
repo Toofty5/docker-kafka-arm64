@@ -1,11 +1,27 @@
-Kafka in Docker in arm64
+Kafka in Docker in arm64  (Fork Notes)
 ===
 Forked from Spotify's dockerfile and modified to work with arm64 architecture for use on Raspberry Pi, with guidance from [Ligato](https://docs.ligato.io/en/dev/user-guide/arm64/)
 
-It seems the JRE base image at java:openjdk-8-jre has no ARM64 build, so Ligato changed it for openjdk:8-jre, which works.  However, the Spotify image also fails because the download mirror for the Kafka install is no longer valid, so I have abstracted that to the DOWNLOAD_URL variable in the Dockerfile and updated it to https://dlcdn.apache.org.  I have also updated the Kafka and Scala version numbers to newer versions.
+It seems the JRE base image at java:openjdk-8-jre has no ARM64 build, so Ligato changed it for openjdk:8-jre, which works.  However, the Spotify image also fails because the download mirror for the Kafka install is no longer valid, so I have abstracted that to the DOWNLOAD_URL variable in the Dockerfile and updated it to https://dlcdn.apache.org/kafka.  I have also updated the Kafka and Scala version numbers to newer versions.
+
+Lastly, I have added the ADVERTISED_LISTENERS variable to receive requests inside the container.  Setting this to the same as ADVERTISED_HOST seems to work for me, but until I learn some more about exactly how/why this works, I'm leaving it as separate variables rather than combining them.
+
+To install kafka-arm64
+---
+```bash
+docker pull toofty5/kafka-arm64:latest
+```
+
+To run kafka-arm64
+---
+```bash
+docker run -p 2181:2181 -p 9092:9092 --env ADVERTISED_LISTENERS=`docker-machine ip \`docker-machine active\`` --env ADVERTISED_HOST=`docker-machine ip \`docker-machine active\`` --env ADVERTISED_PORT=9092 toofty5/kafka-arm64
+```
 
 
-Kafka in Docker
+
+
+Kafka in Docker (Original readme from Spotify)
 ===
 
 This repository provides everything you need to run Kafka in Docker.
