@@ -4,7 +4,13 @@ Forked from Spotify's dockerfile and modified to work with arm64 architecture fo
 
 It seems the JRE base image at java:openjdk-8-jre has no ARM64 build, so Ligato changed it for openjdk:8-jre, which works.  However, the Spotify image also fails because the download mirror for the Kafka install is no longer valid, so I have abstracted that to the DOWNLOAD_URL variable in the Dockerfile and updated it to https://dlcdn.apache.org/kafka.  I have also updated the Kafka and Scala version numbers to newer versions.
 
-Lastly, I have added the ADVERTISED_LISTENERS variable to receive requests inside the container.  Setting this to the same as ADVERTISED_HOST seems to work for me, but until I learn some more about exactly how/why this works, I'm leaving it as separate variables rather than combining them.
+Lastly, the following from the Kafka 3.0.1 update:
+```
+The port and host.name configurations were removed. Please use listeners instead.
+The advertised.port and advertised.host.name configurations were removed. Please use advertised.listeners instead.
+The deprecated worker configurations rest.host.name and rest.port were removed (KAFKA-12482) from the Kafka Connect worker configuration. Please use listeners instead.
+```
+I have consolidated all the necessary variables to ADVERTISED_LISTENERS.  Set that to the hostname:port of your host machine.
 
 To install kafka-arm64
 ---
@@ -15,7 +21,7 @@ docker pull toofty5/kafka-arm64:latest
 To run kafka-arm64
 ---
 ```bash
-docker run -p 2181:2181 -p 9092:9092 --env ADVERTISED_LISTENERS=`docker-machine ip \`docker-machine active\`` --env ADVERTISED_HOST=`docker-machine ip \`docker-machine active\`` --env ADVERTISED_PORT=9092 toofty5/kafka-arm64
+docker run -p 2181:2181 -p 9092:9092 --env ADVERTISED_LISTENERS=this_hostname:9092 toofty5/kafka-arm64
 ```
 
 
