@@ -1,4 +1,4 @@
-Kafka in Docker in arm64
+Kafka in Docker in arm64  (Fork Notes)
 ===
 Forked from Spotify's dockerfile and modified to work with arm64 architecture for use on Raspberry Pi, with guidance from [Ligato](https://docs.ligato.io/en/dev/user-guide/arm64/)
 
@@ -6,8 +6,10 @@ It seems the JRE base image at java:openjdk-8-jre has no ARM64 build, so Ligato 
 
 Lastly, I have added the ADVERTISED_LISTENER variable to receive requests inside the container.  Setting this to the same as ADVERTISED_HOST seems to work for me, but until I learn some more about exactly how/why this works, I'm leaving it as separate variables.
 
+To run:
+===
 ```bash
-docker run -p 2181:2181 -p 9092:9092 --env ADVERTISED_LISTENER=`docker-machine ip \`docker-machine active\``--env ADVERTISED_HOST=`docker-machine ip \`docker-machine active\`` --env ADVERTISED_PORT=9092 spotify/kafka
+docker run -p 2181:2181 -p 9092:9092 --env ADVERTISED_LISTENER=`docker-machine ip \`docker-machine active\``--env ADVERTISED_HOST=`docker-machine ip \`docker-machine active\`` --env ADVERTISED_PORT=9092 toofty5/kafka-arm64
 ```
 
 Kafka in Docker
