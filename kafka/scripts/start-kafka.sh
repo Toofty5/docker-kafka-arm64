@@ -23,21 +23,13 @@ if [ ! -z "$ADVERTISED_HOST" ]; then
         echo "advertised.host.name=$ADVERTISED_HOST" >> $KAFKA_HOME/config/server.properties
     fi
 fi
-if [ ! -z "$ADVERTISED_PORT" ]; then
-    echo "advertised port: $ADVERTISED_PORT"
-    if grep -q "^advertised.port" $KAFKA_HOME/config/server.properties; then
-        sed -r -i "s/#(advertised.port)=(.*)/\1=$ADVERTISED_PORT/g" $KAFKA_HOME/config/server.properties
-    else
-        echo "advertised.port=$ADVERTISED_PORT" >> $KAFKA_HOME/config/server.properties
-    fi
-fi
 
 if [ ! -z "$ADVERTISED_LISTENERS" ]; then
     echo "advertised listeners: $ADVERTISED_LISTENERS"
     if grep -q "^advertised.listeners" $KAFKA_HOME/config/server.properties; then
-        sed -r -i "s/#(advertised.listeners)=(.*)/\1=$ADVERTISED_LISTENERS/g" $KAFKA_HOME/config/server.properties
+        sed -r -i "s/#(advertised.listeners)=(.*)/\1=PLAINTEXT://$ADVERTISED_LISTENERS/g" $KAFKA_HOME/config/server.properties
     else
-        echo "advertised.listeners=$ADVERTISED_LISTENERS" >> $KAFKA_HOME/config/server.properties
+        echo "advertised.listeners=PLAINTEXT://$ADVERTISED_LISTENERS" >> $KAFKA_HOME/config/server.properties
     fi
 fi
 
