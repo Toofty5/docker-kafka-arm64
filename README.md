@@ -1,3 +1,10 @@
+Kafka in Docker in arm64
+===
+Forked from Spotify's dockerfile and modified to work with arm64 architecture for use on Raspberry Pi, with guidance from [Ligato](https://docs.ligato.io/en/dev/user-guide/arm64/)
+
+It seems the Oracle Java base image has no ARM64 build, so Ligato changed it for the OpenJDK image, which works.  However, the Spotify image also fails because the download mirror for the Kafka install is no longer valid, so I have abstracted that to the DOWNLOAD_URL variable in the Dockerfile and updated it to https://dlcdn.apache.org.  
+
+
 Kafka in Docker
 ===
 
