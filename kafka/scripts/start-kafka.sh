@@ -7,47 +7,53 @@
 # * LOG_RETENTION_HOURS: the minimum age of a log file in hours to be eligible for deletion (default is 168, for 1 week)
 # * LOG_RETENTION_BYTES: configure the size at which segments are pruned from the log, (default is 1073741824, for 1GB)
 # * NUM_PARTITIONS: configure the default number of log partitions per topic
+# * CLUSTER_ID: generate with kafka-storage.sh random-uuid
 
 # Configure advertised host/port if we run in helios
-if [ ! -z "$HELIOS_PORT_kafka" ]; then
-    ADVERTISED_HOST=`echo $HELIOS_PORT_kafka | cut -d':' -f 1 | xargs -n 1 dig +short | tail -n 1`
-    ADVERTISED_PORT=`echo $HELIOS_PORT_kafka | cut -d':' -f 2`
-fi
+# Branch note: Helios is for media streaming -- probably more important for Spotify
+# if [ ! -z "$HELIOS_PORT_kafka" ]; then
+#     ADVERTISED_HOST=`echo $HELIOS_PORT_kafka | cut -d':' -f 1 | xargs -n 1 dig +short | tail -n 1`
+#     ADVERTISED_PORT=`echo $HELIOS_PORT_kafka | cut -d':' -f 2`
+# fi
+# 
 
-# Set the external host and port
-if [ ! -z "$ADVERTISED_HOST" ]; then
-    echo "advertised host: $ADVERTISED_HOST"
-    if grep -q "^advertised.host.name" $KAFKA_HOME/config/server.properties; then
-        sed -r -i "s/#(advertised.host.name)=(.*)/\1=$ADVERTISED_HOST/g" $KAFKA_HOME/config/server.properties
-    else
-        echo "advertised.host.name=$ADVERTISED_HOST" >> $KAFKA_HOME/config/server.properties
-    fi
+# Set the external host and port (Deprecated for 3.0.1)
+# if [ ! -z "$ADVERTISED_HOST" ]; then
+#     echo "advertised host: $ADVERTISED_HOST"
+#     if grep -q "^advertised.host.name" $KAFKA_HOME/config/server.properties; then
+#         sed -r -i "s/#(advertised.host.name)=(.*)/\1=$ADVERTISED_HOST/g" $KAFKA_HOME/config/server.properties
+#     else
+#         echo "advertised.host.name=$ADVERTISED_HOST" >> $KAFKA_HOME/config/server.properties
+#     fi
+# fi
+# 
+KRAFT_CONFIG_FILE="$KAFKA_HOME/config/kraft/server.properties"
+
+# If CLUSTER_ID is not defined then make one.  Afterwards, format the storage directories
+if [ -z "$CLUSTER_ID" ]; then
+  CLUSTER_ID=$($KAFKA_HOME/bin/kafka-storage.sh random-uuid)
 fi
+echo "cluster ID: $CLUSTER_ID"
+$KAFKA_HOME/bin/kafka-storage.sh format -t $CLUSTER_ID -c $KRAFT_CONFIG_FILE
+
 
 if [ ! -z "$ADVERTISED_LISTENERS" ]; then
     echo "advertised listeners: $ADVERTISED_LISTENERS"
     if grep -q "^advertised.listeners" $KAFKA_HOME/config/server.properties; then
-        sed -r -i "s/#(advertised.listeners)=(.*)/\1=PLAINTEXT://$ADVERTISED_LISTENERS/g" $KAFKA_HOME/config/server.properties
+        sed -r -i "s/#(advertised.listeners)=(.*)/\1=PLAINTEXT://$ADVERTISED_LISTENERS/g" $KRAFT_CONFIG_FILE
     else
-        echo "advertised.listeners=PLAINTEXT://$ADVERTISED_LISTENERS" >> $KAFKA_HOME/config/server.properties
+        echo "advertised.listeners=PLAINTEXT://$ADVERTISED_LISTENERS" >> $KRAFT_CONFIG_FILE
     fi
 fi
 
-# Set the zookeeper chroot
-if [ ! -z "$ZK_CHROOT" ]; then
-    # wait for zookeeper to start up
-    until /usr/share/zookeeper/bin/zkServer.sh status; do
-      sleep 0.1
-    done
-
-    # create the chroot node
-    echo "create /$ZK_CHROOT \"\"" | /usr/share/zookeeper/bin/zkCli.sh || {
-        echo "can't create chroot in zookeeper, exit"
-        exit 1
-    }
-
-    # configure kafka
-    sed -r -i "s/(zookeeper.connect)=(.*)/\1=localhost:2181\/$ZK_CHROOT/g" $KAFKA_HOME/config/server.properties
+if [ ! -z "$NODE_ID" ]; then
+  echo "node ID: $NODE_ID"
+  if grep -q "^node.id=(.*)"; then
+    sed -r -i "s/^node.id=(.*)/\1=$NODE_ID/g" $KRAFT_CONFIG_FILE
+  fi
+  if grep -q "^controller.quorum.voters=(.*)"; then
+    sed -r -i "s/(controller.quorum.voters)=(.*)/\1=$NODE_ID@$ADVERTISED_LISTENERS:9093/g" $KRAFT_CONFIG_FILE
+  fi
 fi
 
 # Allow specification of log retention policies
@@ -73,4 +79,4 @@ if [ ! -z "$AUTO_CREATE_TOPICS" ]; then
 fi
 
 # Run Kafka
-$KAFKA_HOME/bin/kafka-server-start.sh $KAFKA_HOME/config/server.properties
+$KAFKA_HOME/bin/kafka-server-start.sh $KRAFT_CONFIG_FILE
