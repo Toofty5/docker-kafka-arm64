@@ -29,54 +29,50 @@
 # 
 KRAFT_CONFIG_FILE="$KAFKA_HOME/config/kraft/server.properties"
 
-# If CLUSTER_ID is not defined then make one.  Afterwards, format the storage directories
-if [ -z "$CLUSTER_ID" ]; then
-  CLUSTER_ID=$($KAFKA_HOME/bin/kafka-storage.sh random-uuid)
-fi
-echo "cluster ID: $CLUSTER_ID"
-$KAFKA_HOME/bin/kafka-storage.sh format -t $CLUSTER_ID -c $KRAFT_CONFIG_FILE
 
 
 if [ ! -z "$ADVERTISED_LISTENERS" ]; then
-    echo "advertised listeners: $ADVERTISED_LISTENERS"
-    if grep -q "^advertised.listeners" $KAFKA_HOME/config/server.properties; then
-        sed -r -i "s/#(advertised.listeners)=(.*)/\1=PLAINTEXT://$ADVERTISED_LISTENERS/g" $KRAFT_CONFIG_FILE
-    else
-        echo "advertised.listeners=PLAINTEXT://$ADVERTISED_LISTENERS" >> $KRAFT_CONFIG_FILE
-    fi
+  echo "advertised listeners: $ADVERTISED_LISTENERS"
+  sed -r -i "s@(advertised.listeners)=(.*)@advertised.listeners=PLAINTEXT://$ADVERTISED_LISTENERS@g" $KRAFT_CONFIG_FILE
 fi
 
 if [ ! -z "$NODE_ID" ]; then
-  echo "node ID: $NODE_ID"
-  if grep -q "^node.id=(.*)"; then
-    sed -r -i "s/^node.id=(.*)/\1=$NODE_ID/g" $KRAFT_CONFIG_FILE
-  fi
-  if grep -q "^controller.quorum.voters=(.*)"; then
-    sed -r -i "s/(controller.quorum.voters)=(.*)/\1=$NODE_ID@$ADVERTISED_LISTENERS:9093/g" $KRAFT_CONFIG_FILE
-  fi
+  sed -r -i "s/(node.id)=(.*)/\1=$NODE_ID/g" $KRAFT_CONFIG_FILE
+  sed -r -i "s/(controller.quorum.voters)=(.*)/\1=$NODE_ID@$ADVERTISED_LISTENERS:9093/g" $KRAFT_CONFIG_FILE
 fi
+
+echo "node ID: $NODE_ID"
 
 # Allow specification of log retention policies
 if [ ! -z "$LOG_RETENTION_HOURS" ]; then
     echo "log retention hours: $LOG_RETENTION_HOURS"
-    sed -r -i "s/(log.retention.hours)=(.*)/\1=$LOG_RETENTION_HOURS/g" $KAFKA_HOME/config/server.properties
+    sed -r -i "s/(log.retention.hours)=(.*)/\1=$LOG_RETENTION_HOURS/g" $KRAFT_CONFIG_FILE
 fi
 if [ ! -z "$LOG_RETENTION_BYTES" ]; then
     echo "log retention bytes: $LOG_RETENTION_BYTES"
-    sed -r -i "s/#(log.retention.bytes)=(.*)/\1=$LOG_RETENTION_BYTES/g" $KAFKA_HOME/config/server.properties
+    sed -r -i "s/#(log.retention.bytes)=(.*)/\1=$LOG_RETENTION_BYTES/g" $KRAFT_CONFIG_FILE
 fi
 
 # Configure the default number of log partitions per topic
 if [ ! -z "$NUM_PARTITIONS" ]; then
     echo "default number of partition: $NUM_PARTITIONS"
-    sed -r -i "s/(num.partitions)=(.*)/\1=$NUM_PARTITIONS/g" $KAFKA_HOME/config/server.properties
+    sed -r -i "s/(num.partitions)=(.*)/\1=$NUM_PARTITIONS/g" $KRAFT_CONFIG_FILE
 fi
 
 # Enable/disable auto creation of topics
 if [ ! -z "$AUTO_CREATE_TOPICS" ]; then
     echo "auto.create.topics.enable: $AUTO_CREATE_TOPICS"
-    echo "auto.create.topics.enable=$AUTO_CREATE_TOPICS" >> $KAFKA_HOME/config/server.properties
+    echo "auto.create.topics.enable=$AUTO_CREATE_TOPICS" >> $KRAFT_CONFIG_FILE
 fi
+
+# If CLUSTER_ID is not defined then make one.  Afterwards, format the storage directories
+if [ -z "$CLUSTER_ID" ]; then
+  CLUSTER_ID=$($KAFKA_HOME/bin/kafka-storage.sh random-uuid)
+fi
+
+echo "cluster ID: $CLUSTER_ID"
+
+$KAFKA_HOME/bin/kafka-storage.sh format -t $CLUSTER_ID -c $KRAFT_CONFIG_FILE
 
 # Run Kafka
 $KAFKA_HOME/bin/kafka-server-start.sh $KRAFT_CONFIG_FILE
