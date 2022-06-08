@@ -37,11 +37,16 @@ if [ ! -z "$ADVERTISED_LISTENERS" ]; then
 fi
 
 if [ ! -z "$NODE_ID" ]; then
+  echo "node ID: $NODE_ID"
   sed -r -i "s/(node.id)=(.*)/\1=$NODE_ID/g" $KRAFT_CONFIG_FILE
-  sed -r -i "s/(controller.quorum.voters)=(.*)/\1=$NODE_ID@$ADVERTISED_LISTENERS:9093/g" $KRAFT_CONFIG_FILE
 fi
 
-echo "node ID: $NODE_ID"
+if [ ! -z "$CONTROLLER_QUORUM_VOTERS" ]; then
+  echo "controller quorum voters: $CONTROLLER_QUORUM_VOTERS"
+  sed -r -i "s/(controller.quorum.voters)=(.*)/\1=$CONTROLLER_QUORUM_VOTERS/g" $KRAFT_CONFIG_FILE
+fi
+
+echo 
 
 # Allow specification of log retention policies
 if [ ! -z "$LOG_RETENTION_HOURS" ]; then

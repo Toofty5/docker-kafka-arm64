@@ -15,14 +15,16 @@ RUN apt-get update && \
     apt-get clean && \
     wget -q "$DOWNLOAD_URL"/"$KAFKA_VERSION"/kafka_"$SCALA_VERSION"-"$KAFKA_VERSION".tgz -O /tmp/kafka_"$SCALA_VERSION"-"$KAFKA_VERSION".tgz && \
     tar xfz /tmp/kafka_"$SCALA_VERSION"-"$KAFKA_VERSION".tgz -C /opt && \
+    mkdir /config && \
+    cp "$KAFKA_HOME"/config/kraft/server.properties /config && \
     rm /tmp/kafka_"$SCALA_VERSION"-"$KAFKA_VERSION".tgz
 
-ADD scripts/start-kafka.sh /usr/bin/start-kafka.sh
+COPY scripts/start-kafka.sh /usr/bin/start-kafka.sh
 
 # Supervisor config
-ADD supervisor/kafka.conf /etc/supervisor/conf.d/
+COPY supervisor/kafka.conf /etc/supervisor/conf.d/
 
-# 2181 is zookeeper, 9093 is kafka kraft
-EXPOSE 2181 9093
+# 9092 for broker, 9093 for kraft controller
+EXPOSE 9092 9093
 
 CMD ["supervisord", "-n"]
