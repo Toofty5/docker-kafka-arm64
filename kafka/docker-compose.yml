@@ -1,0 +1,12 @@
+services:
+  broker1:
+    image: kafka-arm64:kraftdev
+    ports:
+      - 9092:9092
+      - 9093:9093
+
+    environment:
+      NODE_ID: 1
+      ADVERTISED_LISTENERS: leonardo:9092
+      CONTROLLER_QUORUM_VOTERS: 1@leonardo:9093
+      CLUSTER_ID: lYuvdNyUS-6NVz4-GMOT2g
